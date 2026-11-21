@@ -193,7 +193,7 @@ Task states: `OPEN` → `ASSIGNED` → `SUBMITTED` → `COMPLETED` or `DISPUTED`
 
 Credits (escrow): publish moves the bounty from the creator's `available` to `held` (RESERVE); approve moves it from the creator's `held` to the worker's `available` (RELEASE + RECEIVE); cancel moves it back (REFUND). Each step is one transaction with ledger rows.
 
-Migrations live in `backend/src/migrations/` and run at startup (`migrationsRun: true`, `synchronize: false`). Pull `main` before generating one, one migration per pull request, never edit a merged migration.
+Migrations live in `backend/src/migrations/` and run at startup (`migrationsRun: true`, `synchronize: false`). Pull `develop` before generating one, one migration per pull request, never edit a merged migration.
 
 ## Concurrency
 
