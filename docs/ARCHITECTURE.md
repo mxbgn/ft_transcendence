@@ -164,7 +164,7 @@ flowchart LR
 
 - Passwords are hashed with **argon2** (salted automatically). Wrong email or password always returns the same 401.
 - **Access token:** JWT, 15 minutes (`JWT_EXPIRES_IN`), sent with every request, verified statelessly (signature + `exp` claim, no database lookup).
-- **Refresh token:** 7 days, stored in the database (revocable), sent only to `POST /api/auth/refresh`.
+- **Refresh token:** 7 days, stored hashed in the database (revocable), sent only to `POST /api/auth/refresh`.
 - Both are cookies with `HttpOnly`, `Secure` and `SameSite=Strict`. The frontend never reads them.
 - Logout deletes the refresh token and both cookies. A password change deletes all of a user's refresh tokens.
 
