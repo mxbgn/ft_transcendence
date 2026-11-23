@@ -202,7 +202,7 @@ PostgreSQL decides every race; never "read, check in TypeScript, then write".
 | Fix | Used for | How |
 | --- | --- | --- |
 | 1. Conditional update | One-row actions: accept, submit, dispute, cancel | `UPDATE tasks SET status = 'ASSIGNED' WHERE id = $1 AND status = 'OPEN'`; 0 rows → 409 |
-| 2. Row lock in a transaction | Multi-row actions: approve, refund | `SELECT … FOR UPDATE` via TypeORM `setLock('pessimistic_write')` inside `dataSource.transaction()`; lock wallets in user-id order |
+| 2. Row lock in a transaction | Multi-row actions: approve, refund | Lock the `tasks` row first (`SELECT … FOR UPDATE` via TypeORM `setLock('pessimistic_write')`) inside `dataSource.transaction()` to verify state (`SUBMITTED` / `OPEN`) and ownership, then lock wallets in user-id order |
 | 3. Constraints | Always | `UNIQUE(task_id)`, `CHECK(available >= 0)`, `UNIQUE(idempotency_key)` |
 
 Proof: Playwright race tests in CI. 10 parallel accepts → one 200 and nine 409; 5 parallel approves → one payout.
