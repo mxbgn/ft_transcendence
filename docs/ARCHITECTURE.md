@@ -165,8 +165,8 @@ flowchart LR
 - Passwords are hashed with **argon2** (salted automatically). Wrong email or password always returns the same 401.
 - **Access token:** JWT, 15 minutes (`JWT_EXPIRES_IN`), sent with every request, verified statelessly (signature + `exp` claim, no database lookup).
 - **Refresh token:** 7 days, stored hashed in the database (revocable), sent only to `POST /api/auth/refresh`.
-- Both are cookies with `HttpOnly`, `Secure` and `SameSite=Strict`. The frontend never reads them.
-- Logout deletes the refresh token and both cookies. A password change deletes all of a user's refresh tokens.
+- Both are cookies with `HttpOnly`, `SameSite=Strict` and `Secure`. `Secure` is on by default and only turned off for local HTTP development (`NODE_ENV=development`); it's always on in the Docker/HTTPS setup. The frontend never reads them.
+- Logout revokes the refresh token and clears both cookies. A password change revokes all of a user's refresh tokens.
 
 ## Validation
 
@@ -183,6 +183,7 @@ Shape rules are written once in the backend DTOs and reach the frontend as gener
 | Table | Key columns | Constraints |
 | --- | --- | --- |
 | users | id, email, password_hash, display_name, avatar_file_id (nullable, Phase 2 FK) | `UNIQUE(email)` |
+| refresh_tokens | id, user_id, token_hash, expires_at, revoked_at | `UNIQUE(token_hash)` |
 | wallets | user_id, available, held | `CHECK(available >= 0)`, `CHECK(held >= 0)` |
 | ledger_entries | id, wallet_id, task_id, type, amount, idempotency_key | `UNIQUE(idempotency_key)`, insert-only |
 | tasks | id, creator_id, title, description, category, bounty, is_remote, status, escrow_status | `CHECK(bounty > 0)` |
@@ -201,8 +202,8 @@ PostgreSQL decides every race; never "read, check in TypeScript, then write".
 
 | Fix | Used for | How |
 | --- | --- | --- |
-| 1. Conditional update | One-row actions: accept, submit, dispute, cancel | `UPDATE tasks SET status = 'ASSIGNED' WHERE id = $1 AND status = 'OPEN'`; 0 rows → 409 |
-| 2. Row lock in a transaction | Multi-row actions: approve, refund | Lock the `tasks` row first (`SELECT … FOR UPDATE` via TypeORM `setLock('pessimistic_write')`) inside `dataSource.transaction()` to verify state (`SUBMITTED` / `OPEN`) and ownership, then lock wallets in user-id order |
+| 1. Conditional update | One-row actions: accept, submit, dispute | `UPDATE tasks SET status = 'ASSIGNED' WHERE id = $1 AND status = 'OPEN'`; 0 rows → 409 |
+| 2. Row lock in a transaction | Multi-row actions: approve, cancel (refund) | Lock the `tasks` row first (`SELECT … FOR UPDATE` via TypeORM `setLock('pessimistic_write')`) inside `dataSource.transaction()` to verify state (`SUBMITTED` / `OPEN`) and ownership, then lock wallets in user-id order |
 | 3. Constraints | Always | `UNIQUE(task_id)`, `CHECK(available >= 0)`, `UNIQUE(idempotency_key)` |
 
 Proof: Playwright race tests in CI. 10 parallel accepts → one 200 and nine 409; 5 parallel approves → one payout.
