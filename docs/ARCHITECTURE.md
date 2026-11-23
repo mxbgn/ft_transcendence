@@ -182,7 +182,7 @@ Shape rules are written once in the backend DTOs and reach the frontend as gener
 
 | Table | Key columns | Constraints |
 | --- | --- | --- |
-| users | id, email, password_hash, display_name, avatar_file_id | `UNIQUE(email)` |
+| users | id, email, password_hash, display_name, avatar_file_id (nullable, Phase 2 FK) | `UNIQUE(email)` |
 | wallets | user_id, available, held | `CHECK(available >= 0)`, `CHECK(held >= 0)` |
 | ledger_entries | id, wallet_id, task_id, type, amount, idempotency_key | `UNIQUE(idempotency_key)`, insert-only |
 | tasks | id, creator_id, title, description, category, bounty, is_remote, status, escrow_status | `CHECK(bounty > 0)` |
