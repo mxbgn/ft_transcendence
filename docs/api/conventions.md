@@ -23,7 +23,9 @@ Rules every endpoint follows. Endpoint details live in their own files (`auth.md
 - `camelCase` fields in requests and responses (`displayName`, `createdAt`)
 - Dates: ISO 8601 strings in UTC (`2026-11-23T10:00:00.000Z`)
 - Credits: integers, no decimals
-- Missing values are `null`, not omitted
+- Requests: required fields must be present, optional fields may be omitted
+- `PATCH`: omitted fields stay unchanged; `null` clears a field (only if it's nullable)
+- Responses: every field is always present; missing values are `null`, not omitted
 
 ## Status codes
 
@@ -37,6 +39,8 @@ Rules every endpoint follows. Endpoint details live in their own files (`auth.md
 | 403 | Logged in but not allowed |
 | 404 | Not found |
 | 409 | Conflict (email taken, task already accepted) |
+| 429 | Too many requests (rate limit) |
+| 500 | Unexpected server error |
 
 ## Errors
 
@@ -61,8 +65,21 @@ List endpoints take `?page=1&limit=20` (default `limit` 20, max 100) and return:
 { "items": [], "total": 0, "page": 1, "limit": 20 }
 ```
 
+## Validation
+
+- `ValidationPipe` with `whitelist`, `forbidNonWhitelisted` and `transform`
+- Unknown fields → 400
+
 ## Auth
 
-- Access and refresh tokens are `HttpOnly` cookies; the frontend never reads them
+- Access and refresh tokens are `HttpOnly`, `Secure`, `SameSite=Strict` cookies; the frontend never reads them
+- `SameSite=Strict` is the CSRF protection (single origin behind Nginx, no CSRF tokens needed)
+- Refresh tokens are stored hashed and revocable
 - Endpoints that need login return 401 without a valid access token
 - Details in `auth.md`
+
+## Authorization
+
+- Only the owner can change a resource (e.g. only a task's creator can edit or cancel it)
+- Visible but not allowed → 403 (editing someone else's task)
+- Private to another user → 404 (another user's wallet), so its existence isn't revealed
