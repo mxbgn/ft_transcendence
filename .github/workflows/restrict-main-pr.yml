@@ -1,0 +1,23 @@
+name: Restrict PRs to main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  enforce-develop-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Accept from develop branch only
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "develop" ]; then
+            echo "::error::Pull requests targeting 'main' must originate from 'develop' (received '$HEAD_REF')."
+            exit 1
+          fi
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "::error::Pull requests targeting 'main' must originate from 'develop' (received '${{ github.head_ref }}')."
+            exit 1
+          fi
