@@ -5,7 +5,7 @@ const status = ref('checking…');
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/health');
+    const res = await fetch('/api/hello');
     status.value = res.ok ? (await res.json()).status : `error ${res.status}`;
   } catch {
     status.value = 'unreachable';
